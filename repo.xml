@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<meta xmlns="http://exist-db.org/xquery/repo">
+    <description>S3 Helper</description>
+    <author>Joe Wicentowski</author>
+    <website>http://joewiz.org</website>
+    <status/>
+    <license/>
+    <copyright/>
+    <type>application</type>
+    <target>s3</target>
+    <prepare/>
+    <finish/>
+    <permissions password="" user="hsg" group="hsg" mode="rw-rw-r--"/>
+</meta>

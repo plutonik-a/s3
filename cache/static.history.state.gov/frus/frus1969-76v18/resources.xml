@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources prefix="frus/frus1969-76v18/">
+    <resource>
+        <filename>_Table_0001.png</filename>
+        <s3-key>frus/frus1969-76v18/_Table_0001.png</s3-key>
+        <size>56233</size>
+        <last-modified>2012-12-20T14:09:26.000Z</last-modified>
+    </resource>
+    <resource>
+        <filename>_Table_0001.tif</filename>
+        <s3-key>frus/frus1969-76v18/_Table_0001.tif</s3-key>
+        <size>16304</size>
+        <last-modified>2011-04-29T14:37:39.000Z</last-modified>
+    </resource>
+    <resource>
+        <filename>_Table_0002.tif</filename>
+        <s3-key>frus/frus1969-76v18/_Table_0002.tif</s3-key>
+        <size>7660</size>
+        <last-modified>2011-04-29T14:37:46.000Z</last-modified>
+    </resource>
+    <resource>
+        <filename>table_0001.png</filename>
+        <s3-key>frus/frus1969-76v18/table_0001.png</s3-key>
+        <size>16345</size>
+        <last-modified>2012-06-08T00:46:48.000Z</last-modified>
+    </resource>
+    <resource>
+        <filename>table_0002.png</filename>
+        <s3-key>frus/frus1969-76v18/table_0002.png</s3-key>
+        <size>8685</size>
+        <last-modified>2012-06-08T00:46:48.000Z</last-modified>
+    </resource>
+</resources>

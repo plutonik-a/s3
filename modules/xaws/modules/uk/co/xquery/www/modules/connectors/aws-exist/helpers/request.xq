@@ -26,6 +26,8 @@ import module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/
 
 import module namespace crypto = "http://expath.org/ns/crypto";
 
+import module namespace http="http://expath.org/ns/http-client";
+
 (:import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
 import module namespace hash = "http://www.zorba-xquery.com/modules/security/hash";
 import module namespace base64 = "http://www.zorba-xquery.com/modules/base64";
@@ -126,7 +128,7 @@ declare function aws-request:sign(
                )
             ,"")
             (:,"canonicalString"):)
-    let $signature as xs:string := crypto:hmac($canonical, $aws-secret, "HmacSha1", "SunJCE")
+    let $signature as xs:string := crypto:hmac($canonical, $aws-secret, "HmacSha1", "base64")
     let $auth-header := <http:header name="Authorization" value="AWS {$aws-key}:{$signature}" />
     return <http:request>{$request/@*, $request/*, $auth-header(:, $canonical:)}</http:request>
 };

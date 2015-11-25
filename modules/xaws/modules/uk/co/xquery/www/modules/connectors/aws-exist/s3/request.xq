@@ -28,7 +28,8 @@ import module namespace common_request = 'http://www.xquery.co.uk/modules/connec
 
 import module namespace httpclient = "http://exist-db.org/xquery/httpclient";
 
-(:import module namespace http = "http://expath.org/ns/http-client";
+import module namespace http = "http://expath.org/ns/http-client";
+(:
 import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
 import module namespace base64 = "http://www.zorba-xquery.com/modules/base64";
 import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at '../s3/error.xq';:)

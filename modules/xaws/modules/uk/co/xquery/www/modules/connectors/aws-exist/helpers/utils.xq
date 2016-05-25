@@ -40,8 +40,10 @@ declare function aws-utils:http-date() as xs:string {
             http://download.oracle.com/javase/6/docs/api/index.html?java/text/SimpleDateFormat.html
     :)    
     
+    format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xs:dayTimeDuration('PT0H')), "[F,*-3], [D] [MNn] [Y0001] [H01]:[m01]:[s01] +0000", 'en', (), 'US')
+    (:
     xsl:format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xdt:dayTimeDuration("PT8H")), "F, DD MMMM YYYY HH:mm:ss Z")
-
+    :)
     (: alternately: :)
     (:
     datetime:format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xdt:dayTimeDuration("PT8H")), 'EEE, dd MMM yyyy kk:mm:ss Z')

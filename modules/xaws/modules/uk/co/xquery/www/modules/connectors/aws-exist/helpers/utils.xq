@@ -22,8 +22,6 @@
  :)
 module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/utils';
 
-import module namespace xsl = 'http://www.w3.org/1999/XSL/Transform';
-
 (:~
  : Generate a date formated according to rfc822. Example: Fri, 15 Oct 10
  :
@@ -33,21 +31,8 @@ import module namespace xsl = 'http://www.w3.org/1999/XSL/Transform';
 :)
 declare function aws-utils:http-date() as xs:string {
 
-    (: note: two functions can do this in eXist:
-        1. xsl:format-dateTime(), which uses the XML Schema "Picture Format"  
-            http://www.w3.org/TR/xslt20/#date-picture-string
-        2. datetime:format-dateTime(), which uses the Java SimpleDateFormat format:
-            http://download.oracle.com/javase/6/docs/api/index.html?java/text/SimpleDateFormat.html
-    :)    
-    
+    (: TODO remove hardcoded `+0000` timezone when https://github.com/eXist-db/exist/issues/1024 is resolved :)
     format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xs:dayTimeDuration('PT0H')), "[F,*-3], [D] [MNn] [Y0001] [H01]:[m01]:[s01] +0000", 'en', (), 'US')
-    (:
-    xsl:format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xdt:dayTimeDuration("PT8H")), "F, DD MMMM YYYY HH:mm:ss Z")
-    :)
-    (: alternately: :)
-    (:
-    datetime:format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xdt:dayTimeDuration("PT8H")), 'EEE, dd MMM yyyy kk:mm:ss Z')
-    :)
     
 };
 

@@ -1,3 +1,4 @@
-build
+build/*
+.existdb.json
 cache
 modules/aws_config.xqm

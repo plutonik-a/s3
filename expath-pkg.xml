@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://expath.org/ns/pkg" name="http://history.state.gov/ns/apps/s3" abbrev="s3" version="0.1" spec="1.0">
+<package xmlns="http://expath.org/ns/pkg" name="http://history.state.gov/ns/apps/s3" abbrev="s3"
+    version="0.1" spec="1.0">
     <title>S3 Helper</title>
     <dependency package="http://expath.org/ns/crypto"/>
 </package>

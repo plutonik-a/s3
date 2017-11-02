@@ -38,7 +38,8 @@ import module namespace hmac = "http://www.zorba-xquery.com/modules/security/hma
 declare function request:create($method as xs:string,$href as xs:string) as element(http:request) {
 
     <http:request method="{$method}"
-                  href="{$href}">
+                  href="{$href}"
+                  http-version="1.1">
         <http:header name="x-amz-date" value="{util:http-date()}" />
         <http:header name="Date" value="{util:http-date()}" />
     </http:request>
@@ -59,7 +60,8 @@ declare function request:create($method as xs:string,$href as xs:string,$paramet
             ,"&amp;")
     return
         <http:request method="{$method}"
-                      href="{$href}{if($query)then concat("?",$query) else ()}">
+                      href="{$href}{if($query)then concat("?",$query) else ()}"
+                      http-version="1.1">
             <http:header name="x-amz-date" value="{util:http-date()}" />
             <http:header name="Date" value="{util:http-date()}" />
         </http:request>

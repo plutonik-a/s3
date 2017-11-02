@@ -13,7 +13,7 @@ import module namespace xmldb="http://exist-db.org/xquery/xmldb";
  : efficiently index and query the files; if it doesn't appear to be XML, though, we just trust 
  : the response headers :)
 declare function local:http-download($file-url as xs:string, $collection as xs:string) as item()* {
-    let $request := <http:request href="{$file-url}" method="GET"/>
+    let $request := <http:request href="{$file-url}" method="GET" http-version="1.1"/>
     let $response := http:send-request($request)
     let $head := $response[1]
     

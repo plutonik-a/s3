@@ -42,7 +42,8 @@ import module namespace hmac = "http://www.zorba-xquery.com/modules/security/hma
 declare function aws-request:create($method as xs:string,$href as xs:string) as element(http:request) {
 
     <http:request method="{$method}"
-                  href="{$href}">
+                  href="{$href}"
+                  http-version="1.1">
         <http:header name="x-amz-date" value="{aws-utils:http-date()}" />
         <http:header name="Date" value="{aws-utils:http-date()}" />
     </http:request>
@@ -63,7 +64,8 @@ declare function aws-request:create($method as xs:string,$href as xs:string,$par
             ,"&amp;")
     return
         <http:request method="{$method}"
-                      href="{$href}{if($query)then concat("?",$query) else ()}">
+                      href="{$href}{if($query)then concat("?",$query) else ()}"
+                      http-version="1.1">
             <http:header name="x-amz-date" value="{aws-utils:http-date()}" />
             <http:header name="Date" value="{aws-utils:http-date()}" />
         </http:request>

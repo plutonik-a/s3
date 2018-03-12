@@ -104,7 +104,14 @@ if (not(xmldb:collection-available('/db/apps/s3/cache'))) then
 else
     ()
 ,
-(: store the contents of static.history.state.gov into the /db/apps/s3/cache directory :)
+(: Cache information about all resources in the static.history.state.gov bucket into the /db/apps/s3/cache collection :)
 local:store-bucket-tree($local:bucket, '/db/apps/s3/cache')
 ,
+
+(: To cache information about the resources in just one directory (frus), comment out the previous expresison and uncomment the following one. 
+ : Note: the trailing slash ("frus/") is necessary for directory names. :)
+(: 
+local:store-directory-tree("frus/", '/db/apps/s3/cache/static.history.state.gov')
+:)
+
 <ok/>

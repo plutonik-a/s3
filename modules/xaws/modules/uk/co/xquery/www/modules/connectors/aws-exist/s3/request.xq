@@ -93,18 +93,18 @@ declare function s3_request:send($request as element(http:request)) as item()* {
  : add an acl grant to the create request
  : 
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-acl-everybody(
+declare function s3_request:add-acl-everybody(
     $request as element(http:request),$acl as xs:string?){
 
     let $acl-header := <http:header name="x-amz-acl" value="{$acl}" />
     return
         (
             if($acl) 
-            then insert node $acl-header as first into $request 
-            else ()
+            then (: insert node $acl-header as first into $request :)
+                element { node-name($request) } { $request/@*, $acl-header, $request/* }
+            else $request
         ) 
-};:)
+};
 
 (:~
  : Add a header to indicate that the value of an object should be copied from a source object instead of
@@ -188,31 +188,31 @@ declare function s3_request:send($request as element(http:request)) as item()* {
  : add an metadata to the request
  : 
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-metadata($request as element(http:request),$metadata as element()*){
+declare function s3_request:add-metadata($request as element(http:request),$metadata as element()*){
 
     for $meta in $metadata
     let $name := concat("x-amz-meta-",$meta/local-name())
     let $value := string($meta/text())
     let $meta-header := <http:header name="{$name}" value="{$value}" />
     return
-        insert node $meta-header as first into $request 
-};:)
+        (:insert node $meta-header as first into $request:)
+        element { node-name($request) } { $request/@*, $meta-header, $request/* }
+};
 
 (:~
  : Add reduced-redundancy flag to the request. This function simply turnes the reduced redundancy on by
  : passing the header x-amz-storage-class=REDUCED_REDUNDANCY.
  : 
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-reduced-redundancy($request as element(http:request)){
+declare function s3_request:add-reduced-redundancy($request as element(http:request)){
 
     let $name := "x-amz-storage-class"
     let $value := "REDUCED_REDUNDANCY"
     let $meta-header := <http:header name="{$name}" value="{$value}" />
     return
-        insert node $meta-header as first into $request 
-};:)
+        (:insert node $meta-header as first into $request:)
+        element { node-name($request) } { $request/@*, $meta-header, $request/* }    
+};
 
 (:~
  : add a bucket request-payment-config to the request

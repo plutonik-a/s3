@@ -24,15 +24,17 @@ module namespace s3_request = 'http://www.xquery.co.uk/modules/connectors/aws/s3
 
 import module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/utils' at '../helpers/utils.xq';
 import module namespace common_request = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/request' at '../helpers/request.xq';
-(:import module namespace factory = 'http://www.xquery.co.uk/modules/connectors/aws/s3/factory' at '../s3/factory.xq';:)
-
-import module namespace httpclient = "http://exist-db.org/xquery/httpclient";
-
+import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at '../s3/error.xq';
 import module namespace http = "http://expath.org/ns/http-client";
 (:
-import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
+import module namespace httpclient = "http://exist-db.org/xquery/httpclient";
+:)
+
+(:
 import module namespace base64 = "http://www.zorba-xquery.com/modules/base64";
-import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at '../s3/error.xq';:)
+import module namespace factory = 'http://www.xquery.co.uk/modules/connectors/aws/s3/factory' at '../s3/factory.xq';
+import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
+:)
 
 (:~
  : send an http request and return the response which is usually a pair of two items: One item containing the response

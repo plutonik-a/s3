@@ -25,13 +25,17 @@ module namespace aws-request = 'http://www.xquery.co.uk/modules/connectors/aws/h
 import module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/utils' at 'utils.xq';
 
 import module namespace crypto = "http://expath.org/ns/crypto";
-
+(:
+import module namespace console="http://exist-db.org/xquery/console";
+:)
 import module namespace http="http://expath.org/ns/http-client";
 
-(:import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
-import module namespace hash = "http://www.zorba-xquery.com/modules/security/hash";
+(:
 import module namespace base64 = "http://www.zorba-xquery.com/modules/base64";
-import module namespace hmac = "http://www.zorba-xquery.com/modules/security/hmac";:)
+import module namespace hash = "http://www.zorba-xquery.com/modules/security/hash";
+import module namespace hmac = "http://www.zorba-xquery.com/modules/security/hmac";
+import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
+:)
 
 
 (:~

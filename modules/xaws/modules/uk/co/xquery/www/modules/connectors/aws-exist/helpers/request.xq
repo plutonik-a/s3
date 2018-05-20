@@ -346,55 +346,52 @@ declare function aws-request:sign(
  :
  :
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-content-xml($request as element(http:request),$content-xml as item()){
+declare function aws-request:add-content-xml($request as element(http:request),$content-xml as item()){
 
-    (\: let $content := ser:serialize($content-xml,<output method="xml" />)
-    let $content-md5 := <http:header name="Content-md5" value="{string(hash:md5($content))}" />:\)
+    (: TODO unsure if we really need to serialize before hashing, or if hash serializes? :)
+    let $content-string := serialize($content-xml, map { "method": "xml" })
+    let $x-amz-content-sha256 := <http:header name="x-amz-content-sha256" value="{crypto:hash($content-string, "sha256", "hex")}" />
     let $body := <http:body media-type="text/xml" method="xml">{$content-xml}</http:body>
     return
         (
-            (\: @TODO doesn't work: insert node $content-md5 as first into $request,:\)
-            insert node $body as last into $request
+            (:insert node $x-amz-content-sha256 as first into $request,:)
+            (:insert node $body as last into $request:)
+            element { node-name($request) } { $request/@*, $x-amz-content-sha256, $request/*, $body }
         ) 
-};:)
+};
 
 (:~
  : add text content to an http request
  :
  :
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-content-text($request as element(http:request),$content-text as xs:string){
+declare function aws-request:add-content-text($request as element(http:request),$content-text as xs:string){
 
-    let $content-length := <http:header name="Content-Length" value="{string-length($content-text)}" />
-    let $content-md5 := <http:header name="Content-md5" value="{string(base64:encode(hash:md5($content-text)))}" />
+    let $x-amz-content-sha256 := <http:header name="x-amz-content-sha256" value="{crypto:hash($content-text, "sha256", "hex")}" />
     let $body := <http:body media-type="text/plain" method="text">{$content-text}</http:body>
     return
         (
-            (\: @TODO doesn't work: insert node $content-md5 as first into $request,:\)
-            insert node $body as last into $request
+            (:insert node $x-amz-content-sha256 as first into $request,:)
+            (:insert node $body as last into $request:)
+            element { node-name($request) } { $request/@*, $x-amz-content-sha256, $request/*, $body }
         ) 
-};:)
+};
 
 (:~
  : add binary content to an http request
  :
  :
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-content-binary(
+declare function aws-request:add-content-binary(
     $request as element(http:request),$content-binary as xs:base64Binary){
 
-    let $content-length := 
-        <http:header name="Content-Length" value="{string-length(string($content-binary))}" />
-    (\:let $content-md5 := <http:header name="Content-md5" value="{string(base64:encode(hash:md5($content-binary)))}" />:\)
-    let $body := <http:body media-type="binary/octet-stream" method="binary">{$content-binary}</http:body>
+    let $x-amz-content-sha256 := <http:header name="x-amz-content-sha256" value="{crypto:hash($content-binary, "sha256", "hex")}" />
+    let $body := <http:body media-type="text/plain" method="binary">{$content-binary}</http:body>
     return
         (
-            insert node $content-length as first into $request,
-            (\: @TODO doesn't work: insert node $content-md5 as first into $request,:\)
-            insert node $body as last into $request
+            (:insert node $x-amz-content-sha256 as first into $request,:)
+            (:insert node $body as last into $request:)
+            element { node-name($request) } { $request/@*, $x-amz-content-sha256, $request/*, $body }
         ) 
-};:)
+};
 

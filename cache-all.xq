@@ -6,7 +6,6 @@ import module namespace aws_config = "http://history.state.gov/ns/xquery/aws_con
 import module namespace bucket = 'http://www.xquery.co.uk/modules/connectors/aws/s3/bucket' at 'modules/xaws/modules/uk/co/xquery/www/modules/connectors/aws-exist/s3/bucket.xq';
 
 declare namespace s3="http://s3.amazonaws.com/doc/2006-03-01/";
-declare namespace httpclient="http://exist-db.org/xquery/httpclient";
 declare namespace functx = "http://www.functx.com"; 
 
 declare variable $local:bucket := 'static.history.state.gov';
@@ -34,8 +33,8 @@ declare function local:contents-to-resources($contents) {
 };
 
 declare function local:get-child-resources($marker, $prefix, $content-cache) {
-    let $list := bucket:list($aws_config:AWS-ACCESS-KEY, $aws_config:AWS-SECRET-KEY, $local:bucket, '/', $marker, '', $prefix)
-    let $contents := $list/httpclient:body/s3:ListBucketResult/s3:Contents[s3:Key ne $prefix]
+    let $list := bucket:list($aws_config:AWS-ACCESS-KEY, $aws_config:AWS-SECRET-KEY, $local:bucket, '/', $marker, '', $prefix)[2]
+    let $contents := $list/s3:ListBucketResult/s3:Contents[s3:Key ne $prefix]
     let $consolidated-results := ($content-cache, $contents)
     return
         if ($list/httpclient:body/s3:ListBucketResult/s3:IsTruncated eq 'true') then
@@ -51,8 +50,8 @@ declare function local:get-child-resources($prefix) {
 };
 
 declare function local:get-child-collections($prefix) {
-    let $list := bucket:list($aws_config:AWS-ACCESS-KEY, $aws_config:AWS-SECRET-KEY, $local:bucket, '/', '', '', $prefix)
-    let $common-prefixes := $list/httpclient:body/s3:ListBucketResult/s3:CommonPrefixes/s3:Prefix
+    let $list := bucket:list($aws_config:AWS-ACCESS-KEY, $aws_config:AWS-SECRET-KEY, $local:bucket, '/', '', '', $prefix)[2]
+    let $common-prefixes := $list/s3:ListBucketResult/s3:CommonPrefixes/s3:Prefix
     for $common-prefix in $common-prefixes
     let $collection := substring-before(substring-after($common-prefix, $prefix), '/')
     return 

@@ -22,6 +22,25 @@
  :)
 module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/utils';
 
+declare namespace functx = "http://www.functx.com";
+
+declare function functx:day-of-week
+  ( $date as xs:anyAtomicType? )  as xs:integer? {
+
+  if (empty($date))
+  then ()
+  else xs:integer((xs:date($date) - xs:date('1901-01-06'))
+          div xs:dayTimeDuration('P1D')) mod 7
+ } ;
+ 
+declare function functx:day-of-week-name-en
+  ( $date as xs:anyAtomicType? )  as xs:string? {
+
+   ('Sunday', 'Monday', 'Tuesday', 'Wednesday',
+    'Thursday', 'Friday', 'Saturday')
+      [functx:day-of-week($date) + 1]
+ } ;
+ 
 (:~
  : Generate a date formated according to rfc822. Example: Fri, 15 Oct 10
  :
@@ -31,9 +50,34 @@ module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/aws/hel
 :)
 declare function aws-utils:http-date() as xs:string {
 
-    (: TODO remove hardcoded `+0000` timezone when https://github.com/eXist-db/exist/issues/1024 is resolved :)
-    format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xs:dayTimeDuration('PT0H')), "[F,*-3], [D] [MNn] [Y0001] [H01]:[m01]:[s01] +0000", 'en', (), 'US')
-    
+    (: TODO replace day of week with [FNn,*-3] when https://github.com/eXist-db/exist/issues/1878 is resolved :)
+    let $day-of-week := substring(functx:day-of-week-name-en(current-date()), 1, 3)
+    let $rest := 
+        format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xs:dayTimeDuration("PT0H")), "[D] [MNn] [Y0001] [H01]:[m01]:[s01] [ZN]", "en", (), "US")
+    return
+        concat($day-of-week, ", ", $rest)
+};
+
+(:~
+ : Generate a date formatted "YYYYMMDD'T'HHMMSS'Z'" for x-amz-date required by AWS Signature Version 4. Example: 20150830T123600Z
+ :
+ : @see https://docs.aws.amazon.com/general/latest/gr/sigv4-date-handling.html
+ : @return x-amz-date formatted dateTime as xs:string
+:)
+declare function aws-utils:x-amz-date() as xs:string {
+
+    format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xs:dayTimeDuration("PT0H")), "[Y0001][M01][D01]T[H01][m01][s01][ZZ]")
+};
+
+(:~
+ : Generate a date formatted "YYYYMMDD" for date value required by AWS Signature Version 4. Example: 20150830
+ :
+ : @see https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html
+ : @return YYYYMMDD formatted date as xs:string
+:)
+declare function aws-utils:yyyymmdd-date() as xs:string {
+
+    format-date(adjust-date-to-timezone(current-date(), xs:dayTimeDuration("PT0H")), "[Y0001][M01][D01]")
 };
 
 (:~

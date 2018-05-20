@@ -44,7 +44,7 @@ declare function aws-request:create($method as xs:string,$href as xs:string) as 
     <http:request method="{$method}"
                   href="{$href}"
                   http-version="1.1">
-        <http:header name="x-amz-date" value="{aws-utils:http-date()}" />
+        <http:header name="x-amz-date" value="{aws-utils:x-amz-date()}" />
         <http:header name="Date" value="{aws-utils:http-date()}" />
     </http:request>
 };
@@ -58,7 +58,7 @@ declare function aws-request:create($method as xs:string,$href as xs:string,$par
 
     let $query := 
         string-join(
-            for $param at $idx in $parameters
+            for $param in $parameters
             order by $param/@name
             return concat(encode-for-uri(string($param/@name)),if(string($param/@value))then concat("=",encode-for-uri(string($param/@value)))else ())
             ,"&amp;")
@@ -66,7 +66,7 @@ declare function aws-request:create($method as xs:string,$href as xs:string,$par
         <http:request method="{$method}"
                       href="{$href}{if($query)then concat("?",$query) else ()}"
                       http-version="1.1">
-            <http:header name="x-amz-date" value="{aws-utils:http-date()}" />
+            <http:header name="x-amz-date" value="{aws-utils:x-amz-date()}" />
             <http:header name="Date" value="{aws-utils:http-date()}" />
         </http:request>
 };

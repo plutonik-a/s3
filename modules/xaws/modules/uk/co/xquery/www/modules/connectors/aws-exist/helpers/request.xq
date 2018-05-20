@@ -71,6 +71,131 @@ declare function aws-request:create($method as xs:string,$href as xs:string,$par
         </http:request>
 };
 
+(:~
+ : Adds the Authorization header to the request according to 
+ : <a href="https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html">Authenticating Requests (AWS Signature Version 4)</a>
+ :  
+:)
+declare function aws-request:sign_v4(
+    $request as element(),
+    $bucketname as xs:string,
+    $object-key as xs:string,
+    $aws-key as xs:string,
+    $aws-secret as xs:string) {
+    
+    let $service := 's3' (: TODO service should be passed in as an argument :)
+    let $region := 'us-east-1' (: TODO region should be passed in as an argument :)
+    let $nl := '&#10;' (: the newline character :)
+    
+    let $http-method := $request/@method
+    let $href := $request/@href
+    let $host := substring-before(substring-after($href, "https://"), "/")
+    let $canonical-uri := (if (contains($href, "?")) then substring-before($href, "?") else $href) => substring-after($host)
+    let $query-string := substring-after($href, "?")
+    let $canonical-query-string := 
+        string-join(
+            for $param in tokenize($query-string, "&amp;")
+            let $name := tokenize($param, "=")[1]
+            let $value := tokenize($param, "=")[2]
+            order by $name
+            return concat($name, "=", $value)
+            ,
+            "&amp;"
+        )
+
+    (: ensure required x-amz-content-sha256 header is present :)
+    let $request := 
+        if ($request/http:header/@name = "x-amz-content-sha256") then 
+            $request
+        else
+            let $x-amz-content-sha256 := <http:header name="x-amz-content-sha256" value="{crypto:hash(($request/http:body/node(), "")[1], "sha256", "hex")}" />
+            return
+                (: insert node $x-amz-content-sha256 as first into $request :)
+                element { node-name($request) } { $request/@*, $x-amz-content-sha256, $request/* }
+
+    (: ensure required host header is present :)
+    let $request := 
+        if ($request/http:header/@name = "Host") then 
+            $request
+        else
+            let $host-header := <http:header name="Host" value="{$host}" />
+            return
+                (: insert node $host-header as first into $request :)
+                element { node-name($request) } { $request/@*, $host-header, $request/* }
+
+    let $canonical-headers :=
+        let $sorted := 
+            for $header in $request/http:header
+            let $key := lower-case($header/@name)
+            let $value := $header/@value
+            order by $key
+            return 
+                concat(
+                    $key,
+                    ":",
+                    $value,
+                    $nl
+                )
+        return
+            string-join($sorted)
+            
+    let $signed-headers :=
+        let $sorted := 
+            for $header in $request/http:header
+            let $key := lower-case($header/@name)
+            order by $key
+            return 
+                $key
+        return
+            string-join($sorted, ";")
+
+    let $hashed-payload := $request/http:header[@name eq "x-amz-content-sha256"]/@value
+    
+    let $canonical-request := concat(   $http-method, $nl,
+                                        $canonical-uri, $nl,
+                                        $canonical-query-string, $nl,
+                                        $canonical-headers,$nl,
+                                        $signed-headers, $nl, 
+                                        $hashed-payload
+                            )
+
+    let $hashed-request := crypto:hash($canonical-request, 'sha256', 'hex')                                  
+    
+    let $date-YYYYMMDD := aws-utils:yyyymmdd-date()
+    let $x-amz-date := $request/http:header[@name eq "x-amz-date"]/@value
+    
+    let $credential-scope := concat($date-YYYYMMDD, '/', $region, '/', $service, '/aws4_request')
+
+    let $string-to-sign := concat(  'AWS4-HMAC-SHA256', $nl,                        (: Hashing Algorithm :)
+                                    $x-amz-date, $nl,                               (: x-amz-date :)
+                                    $credential-scope, $nl,                         (: Credential Scope Value :)
+                                    $hashed-request                                 (: Hashed Canonical Request :)
+                                )
+                                
+    let $kSecret := concat("AWS4", $aws-secret)
+    let $kDate := crypto:hmac($date-YYYYMMDD, $kSecret, "HMAC-SHA-256")
+    let $kRegion := crypto:hmac($region, $kDate, "HMAC-SHA-256")
+    let $kService := crypto:hmac($service, $kRegion, "HMAC-SHA-256")
+    let $kSigning := crypto:hmac("aws4_request", $kService, "HMAC-SHA-256")
+    let $signature := crypto:hmac($string-to-sign, $kSigning, "HMAC-SHA-256", "hex")
+    
+    let $auth-value := concat('AWS4-HMAC-SHA256 Credential=', $aws-key, '/', $date-YYYYMMDD, '/', $region, '/', $service, '/aws4_request,', 
+                        'SignedHeaders=', $signed-headers, ',Signature=', $signature)
+    
+    (:
+    let $log := console:log(concat("canonical request: ", $canonical-request))
+    let $log := console:log(concat("hashed request: ", $hashed-request))                            
+    let $log := console:log(concat("string to sign: ", $string-to-sign))
+    let $log := console:log(concat("signature: ", $signature)) 
+    let $log := console:log(concat("auth-value: ", $auth-value))                    
+    let $log := console:log("url: " || $request/@href)
+    :)
+    
+    let $authorization := <http:header name="Authorization" value= "{$auth-value}"/>
+    
+    return
+        element { node-name($request) } { $request/@*, $authorization, $request/* }
+};
 
 (:~
  : Adds the Authorization header to the request according to 

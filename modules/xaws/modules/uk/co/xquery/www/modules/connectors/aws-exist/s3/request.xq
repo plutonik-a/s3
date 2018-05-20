@@ -24,15 +24,17 @@ module namespace s3_request = 'http://www.xquery.co.uk/modules/connectors/aws/s3
 
 import module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/utils' at '../helpers/utils.xq';
 import module namespace common_request = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/request' at '../helpers/request.xq';
-(:import module namespace factory = 'http://www.xquery.co.uk/modules/connectors/aws/s3/factory' at '../s3/factory.xq';:)
-
-import module namespace httpclient = "http://exist-db.org/xquery/httpclient";
-
+import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at '../s3/error.xq';
 import module namespace http = "http://expath.org/ns/http-client";
 (:
-import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
+import module namespace httpclient = "http://exist-db.org/xquery/httpclient";
+:)
+
+(:
 import module namespace base64 = "http://www.zorba-xquery.com/modules/base64";
-import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at '../s3/error.xq';:)
+import module namespace factory = 'http://www.xquery.co.uk/modules/connectors/aws/s3/factory' at '../s3/factory.xq';
+import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
+:)
 
 (:~
  : send an http request and return the response which is usually a pair of two items: One item containing the response
@@ -41,26 +43,32 @@ import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/
  : @return the http response
 :)
 declare function s3_request:send($request as element(http:request)) as item()* {
-
-    (:let $response := http:send-request($request)
+    let $response := http:send-request($request)
     let $status := number($response[1]/@status)
     return
-        
+        (
+        (:
+        $request,
+        $response
+        :)
         if($status = (200,204)) 
         then $response
-        else error:throw($status,$response);:)
-    
+        else error:throw($status,$response)
+        )
+    (:
     s3_request:expath-to-exist-http-request($request)
+    :)
 
 };
 
 (:~
- : translate the standard EXPath HTTP Client request into the eXist httpclient extension request, 
- : since the EXPath HTTP client is still buggy and generates NPEs
+ : we previously translated the standard EXPath HTTP Client request into the eXist httpclient extension request, 
+ : since the EXPath HTTP client was buggy and generated NPEs, 
+ : but now it's reliable - more so, in some cases
  : 
  : @return the http response
 :)
-declare function s3_request:expath-to-exist-http-request($request as element(http:request)) as item()* {
+(:declare function s3_request:expath-to-exist-http-request($request as element(http:request)) as item()* {
     let $url := xs:anyURI($request/@href)
     let $persist := false()
     let $method := $request/@method
@@ -81,24 +89,24 @@ declare function s3_request:expath-to-exist-http-request($request as element(htt
             httpclient:delete($url, $persist, $request-headers)
         else 
             error()
-};
+};:)
 
 (:~
  : add an acl grant to the create request
  : 
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-acl-everybody(
+declare function s3_request:add-acl-everybody(
     $request as element(http:request),$acl as xs:string?){
 
     let $acl-header := <http:header name="x-amz-acl" value="{$acl}" />
     return
         (
             if($acl) 
-            then insert node $acl-header as first into $request 
-            else ()
+            then (: insert node $acl-header as first into $request :)
+                element { node-name($request) } { $request/@*, $acl-header, $request/* }
+            else $request
         ) 
-};:)
+};
 
 (:~
  : Add a header to indicate that the value of an object should be copied from a source object instead of
@@ -182,31 +190,31 @@ declare function s3_request:expath-to-exist-http-request($request as element(htt
  : add an metadata to the request
  : 
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-metadata($request as element(http:request),$metadata as element()*){
+declare function s3_request:add-metadata($request as element(http:request),$metadata as element()*){
 
     for $meta in $metadata
     let $name := concat("x-amz-meta-",$meta/local-name())
     let $value := string($meta/text())
     let $meta-header := <http:header name="{$name}" value="{$value}" />
     return
-        insert node $meta-header as first into $request 
-};:)
+        (:insert node $meta-header as first into $request:)
+        element { node-name($request) } { $request/@*, $meta-header, $request/* }
+};
 
 (:~
  : Add reduced-redundancy flag to the request. This function simply turnes the reduced redundancy on by
  : passing the header x-amz-storage-class=REDUCED_REDUNDANCY.
  : 
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-reduced-redundancy($request as element(http:request)){
+declare function s3_request:add-reduced-redundancy($request as element(http:request)){
 
     let $name := "x-amz-storage-class"
     let $value := "REDUCED_REDUNDANCY"
     let $meta-header := <http:header name="{$name}" value="{$value}" />
     return
-        insert node $meta-header as first into $request 
-};:)
+        (:insert node $meta-header as first into $request:)
+        element { node-name($request) } { $request/@*, $meta-header, $request/* }    
+};
 
 (:~
  : add a bucket request-payment-config to the request

@@ -25,13 +25,17 @@ module namespace aws-request = 'http://www.xquery.co.uk/modules/connectors/aws/h
 import module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/utils' at 'utils.xq';
 
 import module namespace crypto = "http://expath.org/ns/crypto";
-
+(:
+import module namespace console="http://exist-db.org/xquery/console";
+:)
 import module namespace http="http://expath.org/ns/http-client";
 
-(:import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
-import module namespace hash = "http://www.zorba-xquery.com/modules/security/hash";
+(:
 import module namespace base64 = "http://www.zorba-xquery.com/modules/base64";
-import module namespace hmac = "http://www.zorba-xquery.com/modules/security/hmac";:)
+import module namespace hash = "http://www.zorba-xquery.com/modules/security/hash";
+import module namespace hmac = "http://www.zorba-xquery.com/modules/security/hmac";
+import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
+:)
 
 
 (:~
@@ -44,7 +48,7 @@ declare function aws-request:create($method as xs:string,$href as xs:string) as 
     <http:request method="{$method}"
                   href="{$href}"
                   http-version="1.1">
-        <http:header name="x-amz-date" value="{aws-utils:http-date()}" />
+        <http:header name="x-amz-date" value="{aws-utils:x-amz-date()}" />
         <http:header name="Date" value="{aws-utils:http-date()}" />
     </http:request>
 };
@@ -58,7 +62,7 @@ declare function aws-request:create($method as xs:string,$href as xs:string,$par
 
     let $query := 
         string-join(
-            for $param at $idx in $parameters
+            for $param in $parameters
             order by $param/@name
             return concat(encode-for-uri(string($param/@name)),if(string($param/@value))then concat("=",encode-for-uri(string($param/@value)))else ())
             ,"&amp;")
@@ -66,11 +70,136 @@ declare function aws-request:create($method as xs:string,$href as xs:string,$par
         <http:request method="{$method}"
                       href="{$href}{if($query)then concat("?",$query) else ()}"
                       http-version="1.1">
-            <http:header name="x-amz-date" value="{aws-utils:http-date()}" />
+            <http:header name="x-amz-date" value="{aws-utils:x-amz-date()}" />
             <http:header name="Date" value="{aws-utils:http-date()}" />
         </http:request>
 };
 
+(:~
+ : Adds the Authorization header to the request according to 
+ : <a href="https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html">Authenticating Requests (AWS Signature Version 4)</a>
+ :  
+:)
+declare function aws-request:sign_v4(
+    $request as element(),
+    $bucketname as xs:string,
+    $object-key as xs:string,
+    $aws-key as xs:string,
+    $aws-secret as xs:string) {
+    
+    let $service := 's3' (: TODO service should be passed in as an argument :)
+    let $region := 'us-east-1' (: TODO region should be passed in as an argument :)
+    let $nl := '&#10;' (: the newline character :)
+    
+    let $http-method := $request/@method
+    let $href := $request/@href
+    let $host := substring-before(substring-after($href, "https://"), "/")
+    let $canonical-uri := (if (contains($href, "?")) then substring-before($href, "?") else $href) => substring-after($host)
+    let $query-string := substring-after($href, "?")
+    let $canonical-query-string := 
+        string-join(
+            for $param in tokenize($query-string, "&amp;")
+            let $name := tokenize($param, "=")[1]
+            let $value := tokenize($param, "=")[2]
+            order by $name
+            return concat($name, "=", $value)
+            ,
+            "&amp;"
+        )
+
+    (: ensure required x-amz-content-sha256 header is present :)
+    let $request := 
+        if ($request/http:header/@name = "x-amz-content-sha256") then 
+            $request
+        else
+            let $x-amz-content-sha256 := <http:header name="x-amz-content-sha256" value="{crypto:hash(($request/http:body/node(), "")[1], "sha256", "hex")}" />
+            return
+                (: insert node $x-amz-content-sha256 as first into $request :)
+                element { node-name($request) } { $request/@*, $x-amz-content-sha256, $request/* }
+
+    (: ensure required host header is present :)
+    let $request := 
+        if ($request/http:header/@name = "Host") then 
+            $request
+        else
+            let $host-header := <http:header name="Host" value="{$host}" />
+            return
+                (: insert node $host-header as first into $request :)
+                element { node-name($request) } { $request/@*, $host-header, $request/* }
+
+    let $canonical-headers :=
+        let $sorted := 
+            for $header in $request/http:header
+            let $key := lower-case($header/@name)
+            let $value := $header/@value
+            order by $key
+            return 
+                concat(
+                    $key,
+                    ":",
+                    $value,
+                    $nl
+                )
+        return
+            string-join($sorted)
+            
+    let $signed-headers :=
+        let $sorted := 
+            for $header in $request/http:header
+            let $key := lower-case($header/@name)
+            order by $key
+            return 
+                $key
+        return
+            string-join($sorted, ";")
+
+    let $hashed-payload := $request/http:header[@name eq "x-amz-content-sha256"]/@value
+    
+    let $canonical-request := concat(   $http-method, $nl,
+                                        $canonical-uri, $nl,
+                                        $canonical-query-string, $nl,
+                                        $canonical-headers,$nl,
+                                        $signed-headers, $nl, 
+                                        $hashed-payload
+                            )
+
+    let $hashed-request := crypto:hash($canonical-request, 'sha256', 'hex')                                  
+    
+    let $date-YYYYMMDD := aws-utils:yyyymmdd-date()
+    let $x-amz-date := $request/http:header[@name eq "x-amz-date"]/@value
+    
+    let $credential-scope := concat($date-YYYYMMDD, '/', $region, '/', $service, '/aws4_request')
+
+    let $string-to-sign := concat(  'AWS4-HMAC-SHA256', $nl,                        (: Hashing Algorithm :)
+                                    $x-amz-date, $nl,                               (: x-amz-date :)
+                                    $credential-scope, $nl,                         (: Credential Scope Value :)
+                                    $hashed-request                                 (: Hashed Canonical Request :)
+                                )
+                                
+    let $kSecret := concat("AWS4", $aws-secret)
+    let $kDate := crypto:hmac($date-YYYYMMDD, $kSecret, "HMAC-SHA-256")
+    let $kRegion := crypto:hmac($region, $kDate, "HMAC-SHA-256")
+    let $kService := crypto:hmac($service, $kRegion, "HMAC-SHA-256")
+    let $kSigning := crypto:hmac("aws4_request", $kService, "HMAC-SHA-256")
+    let $signature := crypto:hmac($string-to-sign, $kSigning, "HMAC-SHA-256", "hex")
+    
+    let $auth-value := concat('AWS4-HMAC-SHA256 Credential=', $aws-key, '/', $date-YYYYMMDD, '/', $region, '/', $service, '/aws4_request,', 
+                        'SignedHeaders=', $signed-headers, ',Signature=', $signature)
+    
+    (:
+    let $log := console:log(concat("canonical request: ", $canonical-request))
+    let $log := console:log(concat("hashed request: ", $hashed-request))                            
+    let $log := console:log(concat("string to sign: ", $string-to-sign))
+    let $log := console:log(concat("signature: ", $signature)) 
+    let $log := console:log(concat("auth-value: ", $auth-value))                    
+    let $log := console:log("url: " || $request/@href)
+    :)
+    
+    let $authorization := <http:header name="Authorization" value= "{$auth-value}"/>
+    
+    return
+        element { node-name($request) } { $request/@*, $authorization, $request/* }
+};
 
 (:~
  : Adds the Authorization header to the request according to 
@@ -221,55 +350,52 @@ declare function aws-request:sign(
  :
  :
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-content-xml($request as element(http:request),$content-xml as item()){
+declare function aws-request:add-content-xml($request as element(http:request),$content-xml as item()){
 
-    (\: let $content := ser:serialize($content-xml,<output method="xml" />)
-    let $content-md5 := <http:header name="Content-md5" value="{string(hash:md5($content))}" />:\)
+    (: TODO unsure if we really need to serialize before hashing, or if hash serializes? :)
+    let $content-string := serialize($content-xml, map { "method": "xml" })
+    let $x-amz-content-sha256 := <http:header name="x-amz-content-sha256" value="{crypto:hash($content-string, "sha256", "hex")}" />
     let $body := <http:body media-type="text/xml" method="xml">{$content-xml}</http:body>
     return
         (
-            (\: @TODO doesn't work: insert node $content-md5 as first into $request,:\)
-            insert node $body as last into $request
+            (:insert node $x-amz-content-sha256 as first into $request,:)
+            (:insert node $body as last into $request:)
+            element { node-name($request) } { $request/@*, $x-amz-content-sha256, $request/*, $body }
         ) 
-};:)
+};
 
 (:~
  : add text content to an http request
  :
  :
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-content-text($request as element(http:request),$content-text as xs:string){
+declare function aws-request:add-content-text($request as element(http:request),$content-text as xs:string){
 
-    let $content-length := <http:header name="Content-Length" value="{string-length($content-text)}" />
-    let $content-md5 := <http:header name="Content-md5" value="{string(base64:encode(hash:md5($content-text)))}" />
+    let $x-amz-content-sha256 := <http:header name="x-amz-content-sha256" value="{crypto:hash($content-text, "sha256", "hex")}" />
     let $body := <http:body media-type="text/plain" method="text">{$content-text}</http:body>
     return
         (
-            (\: @TODO doesn't work: insert node $content-md5 as first into $request,:\)
-            insert node $body as last into $request
+            (:insert node $x-amz-content-sha256 as first into $request,:)
+            (:insert node $body as last into $request:)
+            element { node-name($request) } { $request/@*, $x-amz-content-sha256, $request/*, $body }
         ) 
-};:)
+};
 
 (:~
  : add binary content to an http request
  :
  :
 :)
-(: TODO-eXist :)
-(:declare updating function request:add-content-binary(
+declare function aws-request:add-content-binary(
     $request as element(http:request),$content-binary as xs:base64Binary){
 
-    let $content-length := 
-        <http:header name="Content-Length" value="{string-length(string($content-binary))}" />
-    (\:let $content-md5 := <http:header name="Content-md5" value="{string(base64:encode(hash:md5($content-binary)))}" />:\)
-    let $body := <http:body media-type="binary/octet-stream" method="binary">{$content-binary}</http:body>
+    let $x-amz-content-sha256 := <http:header name="x-amz-content-sha256" value="{crypto:hash($content-binary, "sha256", "hex")}" />
+    let $body := <http:body media-type="text/plain" method="binary">{$content-binary}</http:body>
     return
         (
-            insert node $content-length as first into $request,
-            (\: @TODO doesn't work: insert node $content-md5 as first into $request,:\)
-            insert node $body as last into $request
+            (:insert node $x-amz-content-sha256 as first into $request,:)
+            (:insert node $body as last into $request:)
+            element { node-name($request) } { $request/@*, $x-amz-content-sha256, $request/*, $body }
         ) 
-};:)
+};
 

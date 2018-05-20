@@ -22,15 +22,13 @@
  :)
 module namespace object = 'http://www.xquery.co.uk/modules/connectors/aws/s3/object';
 
-(:import module namespace http = "http://expath.org/ns/http-client";
-import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
-:)
-
 import module namespace aws-request = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/request' at '../helpers/request.xq';
 import module namespace s3_request = 'http://www.xquery.co.uk/modules/connectors/aws/s3/request' at 'request.xq';
-(:import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at 'error.xq';
-import module namespace response = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/response' at '../helpers/response.xq';
+import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at 'error.xq';
+(:
 import module namespace factory = 'http://www.xquery.co.uk/modules/connectors/aws/s3/factory' at '../s3/factory.xq';
+import module namespace response = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/response' at '../helpers/response.xq';
+import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
 :)
 
 (:~ 
@@ -46,30 +44,19 @@ declare variable $object:test as xs:string := "value";
  : @param $key the key of the object to be deleted
  : @return returns the http-response information (header, statuscode,...) 
 :)
-(: TODO-eXist :)
-(:declare sequential function object:delete(
+declare function object:delete(
     $aws-access-key as xs:string, 
     $aws-secret as xs:string,
     $bucket as xs:string,
     $key as xs:string
 ) as item()* {
 
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com/",$key)
-    let $request := request:create("DELETE",$href)
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/", $key)
+    let $request := aws-request:create("DELETE", $href)
+    let $sign := aws-request:sign_v4($request, $bucket, $key, $aws-access-key, $aws-secret)
     return 
-        block{
-            (\: sign the request :\)
-            request:sign(
-                $request,
-                $bucket,
-                $key,
-                $aws-access-key,
-                $aws-secret);
-                
-            (\: delete it :\)
-            s3_request:send($request);
-        }
-};:)
+        s3_request:send($sign)
+};
 
 (:~ 
  : delete specific versoin of an object from a bucket of a user. The user is authenticated with the aws-access-key 
@@ -124,9 +111,9 @@ declare function object:read(
     $bucket as xs:string,
     $key as xs:string
 ) as item()* {
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com/", $key)
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/", $key)
     let $request := aws-request:create("GET", $href)
-    let $sign := aws-request:sign($request, $bucket, $key, $aws-access-key, $aws-secret)
+    let $sign := aws-request:sign_v4($request, $bucket, $key, $aws-access-key, $aws-secret)
     return 
         s3_request:send($sign)
 };
@@ -186,9 +173,9 @@ declare function object:get-config-acl(
     $bucket as xs:string,
     $key as xs:string
 ) as item()* {
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com/", $key)
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/", $key)
     let $request := aws-request:create("GET", $href, <parameter name="acl" />)
-    let $sign := aws-request:sign($request, $bucket, $key, $aws-access-key, $aws-secret)
+    let $sign := aws-request:sign_v4($request, $bucket, $key, $aws-access-key, $aws-secret)
     return 
         s3_request:send($sign)
 };
@@ -288,9 +275,9 @@ declare function object:metadata(
     $bucket as xs:string,
     $key as xs:string
 ) as item()* {
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com/", $key)
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/", $key)
     let $request := aws-request:create("HEAD", $href)
-    let $sign := aws-request:sign($request, $bucket, $key, $aws-access-key, $aws-secret)
+    let $sign := aws-request:sign_v4($request, $bucket, $key, $aws-access-key, $aws-secret)
     return 
         s3_request:send($sign)
 };
@@ -348,8 +335,7 @@ declare function object:metadata(
  : @param $key a key for the object into which the uploaded data will be stored
  : @return returns the http reponse data (headers, statuscode,...)
 :)
-(: TODO-eXist :)
-(:declare sequential function object:write(
+declare function object:write(
     $aws-access-key as xs:string, 
     $aws-secret as xs:string,
     $bucket as xs:string,
@@ -358,7 +344,7 @@ declare function object:metadata(
 ) as item()* {
 
     object:write($aws-access-key,$aws-secret,$bucket,$key,$content,(),(),())
-};:)
+};
 
 (:~
  : upload xml (<code>node()</code> or <code>document-node()</code>), text (<code>xs:string</code>), or binary data 
@@ -384,8 +370,7 @@ declare function object:metadata(
  : @param $metadata optionally, you can add any custom metadata to the uploaded object
  : @return returns the http reponse data (headers, statuscode,...)
 :)
-(: TODO-eXist :)
-(:declare sequential function object:write(
+declare function object:write(
     $aws-access-key as xs:string, 
     $aws-secret as xs:string,
     $bucket as xs:string,
@@ -395,7 +380,7 @@ declare function object:metadata(
 ) as item()* {
 
     object:write($aws-access-key,$aws-secret,$bucket,$key,$content,$metadata,())
-};:)
+};
 
 
 (:~
@@ -425,8 +410,7 @@ declare function object:metadata(
  :                            $reduced-redundancy is turned off.
  : @return returns the http reponse data (headers, statuscode,...)
 :)
-(: TODO-eXist :)
-(:declare sequential function object:write(
+declare function object:write(
     $aws-access-key as xs:string, 
     $aws-secret as xs:string,
     $bucket as xs:string,
@@ -437,7 +421,7 @@ declare function object:metadata(
 ) as item()* {
 
     object:write($aws-access-key,$aws-secret,$bucket,$key,$content,$metadata,(),$reduced-redundancy)
-};:)
+};
 
 (:~
  : upload xml (<code>node()</code> or <code>document-node()</code>), text (<code>xs:string</code>), or binary data 
@@ -469,8 +453,7 @@ declare function object:metadata(
  :                            $reduced-redundancy is turned off.
  : @return returns the http reponse data (headers, statuscode,...)
 :)
-(: TODO-eXist :)
-(:declare sequential function object:write(
+declare function object:write(
     $aws-access-key as xs:string, 
     $aws-secret as xs:string,
     $bucket as xs:string,
@@ -481,40 +464,35 @@ declare function object:metadata(
     $reduced-redundancy as xs:boolean?
 ) as item()* {
 
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com/", $key)
-    let $request := request:create("PUT",$href)
-    return 
-        block{
-            (\: add body and content-length header and acl header :\)
-            (
-                typeswitch ($content)
-                    case $c as xs:string return request:add-content-text($request,$c)
-                    case $c as text() return request:add-content-text($request,$c)
-                    case $c as element() return request:add-content-xml($request,$c)
-                    case $c as document-node() return request:add-content-xml($request,$c)
-                    case $c as xs:base64Binary return request:add-content-binary($request,$c)
-                    default $c return error(
-                        xs:QName("error:S3_UNSUPPORTED_PUT_CONTENT"),
-                        "The provided content is not supported. Only xs:string,text,element,document-node,xs:base64Binary is allowed.",
-                        $c)
-                ,
-                s3_request:add-acl-everybody($request,$acl),
-                if ($metadata) then s3_request:add-metadata($request,$metadata/*) else (),
-                if($reduced-redundancy)then s3_request:add-reduced-redundancy($request) else ()
-            );
-            
-            (\: sign the request :\)
-            request:sign(
-                $request,
-                $bucket,
-                $key,
-                $aws-access-key,
-                $aws-secret);
-                
-            (\: upload to s3 :\)
-            s3_request:send($request);
-        }
-};:)
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/", $key)
+    let $request := aws-request:create("PUT",$href)
+    let $add-body :=
+        (: add body and content-length header :)
+        typeswitch ($content)
+            case $c as xs:string return aws-request:add-content-text($request,$c)
+            case $c as text() return aws-request:add-content-text($request,$c)
+            case $c as element() return aws-request:add-content-xml($request,$c)
+            case $c as document-node() return aws-request:add-content-xml($request,$c)
+            case $c as xs:base64Binary return aws-request:add-content-binary($request,$c)
+            default $c return error(
+                xs:QName("error:S3_UNSUPPORTED_PUT_CONTENT"),
+                "The provided content is not supported. Only xs:string,text,element,document-node,xs:base64Binary is allowed.",
+                $c)
+    let $add-acl := s3_request:add-acl-everybody($add-body,$acl)
+    let $add-metadata := if ($metadata) then s3_request:add-metadata($add-acl,$metadata/*) else $add-acl
+    let $add-reduced-redundancy := if($reduced-redundancy)then s3_request:add-reduced-redundancy($add-metadata) else $add-metadata
+    let $signed-request := 
+       (: sign the request :)
+       aws-request:sign_v4(
+            $add-reduced-redundancy,
+            $bucket,
+            $key,
+            $aws-access-key,
+            $aws-secret)
+    return
+        (: upload to s3 :)
+        s3_request:send($signed-request)
+};
 
 
 (:~

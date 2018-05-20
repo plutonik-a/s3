@@ -23,15 +23,17 @@
  :)
 module namespace bucket = 'http://www.xquery.co.uk/modules/connectors/aws/s3/bucket';
 
-(:import module namespace http = "http://expath.org/ns/http-client";
-import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";:)
- 
 import module namespace aws-request = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/request' at '../helpers/request.xq';
 import module namespace s3_request = 'http://www.xquery.co.uk/modules/connectors/aws/s3/request' at 'request.xq';
 import module namespace aws-utils = 'http://www.xquery.co.uk/modules/connectors/aws/helpers/utils' at '../helpers/utils.xq';
-(:import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at '../s3/error.xq';
-import module namespace factory = 'http://www.xquery.co.uk/modules/connectors/aws/s3/factory' at '../s3/factory.xq';:)
 
+(:
+import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/s3/error' at '../s3/error.xq';
+import module namespace factory = 'http://www.xquery.co.uk/modules/connectors/aws/s3/factory' at '../s3/factory.xq';
+import module namespace http = "http://expath.org/ns/http-client";
+import module namespace ser = "http://www.zorba-xquery.com/modules/serialize";
+:)
+ 
 (: @todo: this is actually strange that there are two different namespace which are both quite similar :)
 declare namespace aws = "http://s3.amazonaws.com/doc/2006-03-01/";
 declare namespace s3 = "http://doc.s3.amazonaws.com/2006-03-01";
@@ -90,7 +92,7 @@ declare function bucket:list(
     $aws-secret as xs:string
 ) as item()* {
 
-    let $href as xs:string := "http://s3.amazonaws.com"
+    let $href as xs:string := "https://s3.amazonaws.com"
     let $request := aws-request:create("GET", $href)
     let $sign := aws-request:sign($request, '', '', $aws-access-key, $aws-secret)
     return 
@@ -155,7 +157,7 @@ declare function bucket:list(
     $prefix as xs:string?
 ) as item()* {    
 
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com")
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/")
     let $parameters := 
         (
             if($delimiter) then <parameter name="delimiter" value="{$delimiter}" /> else (),
@@ -164,7 +166,7 @@ declare function bucket:list(
             if($prefix) then <parameter name="prefix" value="{$prefix}" /> else ()
         )
     let $request := aws-request:create("GET", $href, $parameters)
-    let $sign := aws-request:sign($request, $bucket, '', $aws-access-key, $aws-secret)
+    let $sign := aws-request:sign_v4($request, $bucket, '', $aws-access-key, $aws-secret)
     return 
         s3_request:send($sign)
 };

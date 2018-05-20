@@ -124,9 +124,9 @@ declare function object:read(
     $bucket as xs:string,
     $key as xs:string
 ) as item()* {
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com/", $key)
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/", $key)
     let $request := aws-request:create("GET", $href)
-    let $sign := aws-request:sign($request, $bucket, $key, $aws-access-key, $aws-secret)
+    let $sign := aws-request:sign_v4($request, $bucket, $key, $aws-access-key, $aws-secret)
     return 
         s3_request:send($sign)
 };
@@ -186,9 +186,9 @@ declare function object:get-config-acl(
     $bucket as xs:string,
     $key as xs:string
 ) as item()* {
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com/", $key)
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/", $key)
     let $request := aws-request:create("GET", $href, <parameter name="acl" />)
-    let $sign := aws-request:sign($request, $bucket, $key, $aws-access-key, $aws-secret)
+    let $sign := aws-request:sign_v4($request, $bucket, $key, $aws-access-key, $aws-secret)
     return 
         s3_request:send($sign)
 };
@@ -288,9 +288,9 @@ declare function object:metadata(
     $bucket as xs:string,
     $key as xs:string
 ) as item()* {
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com/", $key)
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/", $key)
     let $request := aws-request:create("HEAD", $href)
-    let $sign := aws-request:sign($request, $bucket, $key, $aws-access-key, $aws-secret)
+    let $sign := aws-request:sign_v4($request, $bucket, $key, $aws-access-key, $aws-secret)
     return 
         s3_request:send($sign)
 };

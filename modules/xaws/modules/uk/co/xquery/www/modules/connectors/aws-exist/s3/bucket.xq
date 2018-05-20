@@ -90,7 +90,7 @@ declare function bucket:list(
     $aws-secret as xs:string
 ) as item()* {
 
-    let $href as xs:string := "http://s3.amazonaws.com"
+    let $href as xs:string := "https://s3.amazonaws.com"
     let $request := aws-request:create("GET", $href)
     let $sign := aws-request:sign($request, '', '', $aws-access-key, $aws-secret)
     return 
@@ -155,7 +155,7 @@ declare function bucket:list(
     $prefix as xs:string?
 ) as item()* {    
 
-    let $href as xs:string := concat("http://", $bucket, ".s3.amazonaws.com")
+    let $href as xs:string := concat("https://s3.amazonaws.com/", $bucket, "/")
     let $parameters := 
         (
             if($delimiter) then <parameter name="delimiter" value="{$delimiter}" /> else (),
@@ -164,7 +164,7 @@ declare function bucket:list(
             if($prefix) then <parameter name="prefix" value="{$prefix}" /> else ()
         )
     let $request := aws-request:create("GET", $href, $parameters)
-    let $sign := aws-request:sign($request, $bucket, '', $aws-access-key, $aws-secret)
+    let $sign := aws-request:sign_v4($request, $bucket, '', $aws-access-key, $aws-secret)
     return 
         s3_request:send($sign)
 };

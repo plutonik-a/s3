@@ -41,26 +41,32 @@ import module namespace error = 'http://www.xquery.co.uk/modules/connectors/aws/
  : @return the http response
 :)
 declare function s3_request:send($request as element(http:request)) as item()* {
-
-    (:let $response := http:send-request($request)
+    let $response := http:send-request($request)
     let $status := number($response[1]/@status)
     return
-        
+        (
+        (:
+        $request,
+        $response
+        :)
         if($status = (200,204)) 
         then $response
-        else error:throw($status,$response);:)
-    
+        else error:throw($status,$response)
+        )
+    (:
     s3_request:expath-to-exist-http-request($request)
+    :)
 
 };
 
 (:~
- : translate the standard EXPath HTTP Client request into the eXist httpclient extension request, 
- : since the EXPath HTTP client is still buggy and generates NPEs
+ : we previously translated the standard EXPath HTTP Client request into the eXist httpclient extension request, 
+ : since the EXPath HTTP client was buggy and generated NPEs, 
+ : but now it's reliable - more so, in some cases
  : 
  : @return the http response
 :)
-declare function s3_request:expath-to-exist-http-request($request as element(http:request)) as item()* {
+(:declare function s3_request:expath-to-exist-http-request($request as element(http:request)) as item()* {
     let $url := xs:anyURI($request/@href)
     let $persist := false()
     let $method := $request/@method
@@ -81,7 +87,7 @@ declare function s3_request:expath-to-exist-http-request($request as element(htt
             httpclient:delete($url, $persist, $request-headers)
         else 
             error()
-};
+};:)
 
 (:~
  : add an acl grant to the create request

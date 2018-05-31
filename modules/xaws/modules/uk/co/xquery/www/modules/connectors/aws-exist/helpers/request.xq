@@ -47,7 +47,8 @@ declare function aws-request:create($method as xs:string,$href as xs:string) as 
 
     <http:request method="{$method}"
                   href="{$href}"
-                  http-version="1.1">
+                  http-version="1.1"
+                  chunked="false">
         <http:header name="x-amz-date" value="{aws-utils:x-amz-date()}" />
         <http:header name="Date" value="{aws-utils:http-date()}" />
     </http:request>
@@ -69,7 +70,8 @@ declare function aws-request:create($method as xs:string,$href as xs:string,$par
     return
         <http:request method="{$method}"
                       href="{$href}{if($query)then concat("?",$query) else ()}"
-                      http-version="1.1">
+                      http-version="1.1"
+                      chunked="false">
             <http:header name="x-amz-date" value="{aws-utils:x-amz-date()}" />
             <http:header name="Date" value="{aws-utils:http-date()}" />
         </http:request>

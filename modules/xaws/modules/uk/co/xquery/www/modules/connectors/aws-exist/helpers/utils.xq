@@ -51,9 +51,9 @@ declare function functx:day-of-week-name-en
 declare function aws-utils:http-date() as xs:string {
 
     (: TODO replace day of week with [FNn,*-3] when https://github.com/eXist-db/exist/issues/1878 is resolved :)
-    let $day-of-week := substring(functx:day-of-week-name-en(current-date()), 1, 3)
+    let $day-of-week := substring(functx:day-of-week-name-en(util:system-date()), 1, 3)
     let $rest := 
-        format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xs:dayTimeDuration("PT0H")), "[D] [MNn] [Y0001] [H01]:[m01]:[s01] [ZN]", "en", (), "US")
+        format-dateTime(adjust-dateTime-to-timezone(util:system-dateTime(), xs:dayTimeDuration("PT0H")), "[D] [MNn] [Y0001] [H01]:[m01]:[s01] [ZN]", "en", (), "US")
     return
         concat($day-of-week, ", ", $rest)
 };
@@ -66,7 +66,7 @@ declare function aws-utils:http-date() as xs:string {
 :)
 declare function aws-utils:x-amz-date() as xs:string {
 
-    format-dateTime(adjust-dateTime-to-timezone(current-dateTime(), xs:dayTimeDuration("PT0H")), "[Y0001][M01][D01]T[H01][m01][s01][ZZ]")
+    format-dateTime(adjust-dateTime-to-timezone(util:system-dateTime(), xs:dayTimeDuration("PT0H")), "[Y0001][M01][D01]T[H01][m01][s01][ZZ]")
 };
 
 (:~
@@ -77,7 +77,7 @@ declare function aws-utils:x-amz-date() as xs:string {
 :)
 declare function aws-utils:yyyymmdd-date() as xs:string {
 
-    format-date(adjust-date-to-timezone(current-date(), xs:dayTimeDuration("PT0H")), "[Y0001][M01][D01]")
+    format-date(adjust-date-to-timezone(util:system-date(), xs:dayTimeDuration("PT0H")), "[Y0001][M01][D01]")
 };
 
 (:~

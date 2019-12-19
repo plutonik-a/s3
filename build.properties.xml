@@ -4,7 +4,7 @@
         <name>s3</name>
         <url>http://history.state.gov/ns/apps/s3</url>
         <title>S3 Helper</title>
-        <version>0.4</version>
+        <version>0.5</version>
     </app>
     <trigger>
         <provider-url>

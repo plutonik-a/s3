@@ -7,7 +7,7 @@ import module namespace bucket = 'http://www.xquery.co.uk/modules/connectors/aws
 
 declare namespace s3="http://s3.amazonaws.com/doc/2006-03-01/";
 declare namespace functx = "http://www.functx.com";
-import module namespace hsg-config = "http://history.state.gov/ns/xquery/config" at '/db/apps/hsg-shell/modules/config.xqm';
+import module namespace hsg-config = "http://history.state.gov/ns/site/hsg/config" at '/db/apps/hsg-shell/modules/config.xqm';
 
 declare variable $local:bucket := $hsg-config:S3_BUCKET;
 

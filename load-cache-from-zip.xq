@@ -5,7 +5,7 @@ import module namespace unzip = "http://joewiz.org/ns/xquery/unzip" at "https://
 import module namespace http="http://expath.org/ns/http-client";
 import module namespace util="http://exist-db.org/xquery/util";
 import module namespace xmldb="http://exist-db.org/xquery/xmldb";
-import module namespace hsg-config = "http://history.state.gov/ns/xquery/config" at '/db/apps/hsg-shell/modules/config.xqm';
+import module namespace hsg-config = "http://history.state.gov/ns/site/hsg/config" at '/db/apps/hsg-shell/modules/config.xqm';
 
 (: the following module was copied from https://gist.github.com/joewiz/5938909 :)
 
